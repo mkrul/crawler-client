@@ -1,87 +1,98 @@
 import React, { Component } from 'react'
-import { Container, Header, Form, Button, Segment, Icon } from 'semantic-ui-react'
-import apis from '../api'
+import { Container, Segment, Header, Divider, Image } from 'semantic-ui-react'
+import api from '../api'
 
 class Main extends Component {
   constructor(props) {
     super(props)
-
     this.state = {
-      email: ''
+      listings: [],
+      isLoading: false
     }
   }
 
-  validateEmail(email) {
-    var re = /^\w+([\.-]?\w+)*@(\w+([\.-]?\w+))?(waketech|my.waketech)\.edu$/
+  componentDidMount = async () => {
+    this.setState({ isLoading: true })
 
-    return re.test(email)
-  }
-
-  handleChangeInputEmail = async event => {
-    const email = event.target.value
-    this.setState({ email })
-  }
-
-  handleAddEmail = async() => {
-    const { email } = this.state
-    const payload = { email }
-
-    if (this.validateEmail(payload.email)) {
-      await apis.insertEmail(payload).then(res => {
-        window.alert('Email inserted successfully')
+    await api.getListings().then(listings => {
+      this.setState({
+        listings: listings.data.data,
+        isLoading: false
       })
-    } else {
-      window.alert('Must be a valid email address')
-    }
-
-    this.setState({ email: '' })
+    })
   }
 
   render() {
-    const { email } = this.state
+    const { listings, isLoading } = this.state
+
+    var formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+
+    
     const mainContainer = {
       margin: '0 auto',
       marginTop: '50px',
     }
-    const emailForm = {
-      margin: '0 auto',
-      marginTop: '40px',
-      width: '300px'
+    const imgCol = {
+      float: 'right',
+      padding: '20px'
+    }
+    const columnLeft = {
+      float: 'left',
+      width: '60%',
+      textAlign: 'left',
+      paddingTop: '20px'
+    }
+    const columnRight = {
+      float: 'right',
+      width: '500px'
+    }
+    const row = {
+      display: 'flex',
     }
 
-    return (
-      <div style={mainContainer}>
-        <Container textAlign="center">
-          <Header textAlign="center" as="h1">
-            Welcome!
-          </Header>
-          <p>
-            To subscribe to the off-market real estate mailing list, enter your 
-            Wake Tech email address and click "Submit".
-          </p>
-          <p>
-            <b>Note: </b>Only valid Wake Tech email addresses are being accepted 
-            at this time.
-          </p>
-          <Form>
-            <div style={emailForm}>
-              <Segment placeholder>
-                <Header icon>
-                  <Icon name="mail" />
-                  Enter Your Email Address
-                </Header>
-                <Form.Field>
-                  <input 
-                    type="text"
-                    value={email}
-                    onChange={this.handleChangeInputEmail}
-                    placeholder="Email"
-                  />
-                </Form.Field>
-                <Button type="submit" onClick={this.handleAddEmail}>Submit</Button>
-              </Segment>
+    const listingsArr = []
+    listings.forEach(listing => {
+      console.log(listing)
+      listingsArr.push(
+        <Segment key={listing['_id']}>
+          <Header>{listing['title']}</Header>
+          <div style={row}>
+            <div style={columnLeft}>
+              <p>
+                <b>Price: </b>{formatter.format(listing['price'])}
+              </p>
+              <p>
+                <b>Location: </b>{listing['location']}
+              </p>
+              <p>
+                <b>Description: </b>{listing['description']}
+              </p>
+              <p>
+                <b>Listed: </b>{listing['listed_date']}
+              </p>
+              <p>
+                <b>Link: </b>{listing['url']}
+              </p>
             </div>
-          </Form>
+            <div style={columnRight}>
+              <div style={imgCol}>
+                <Image src={listing['image']}></Image>
+              </div>
+            </div>
+          </div>
+        </Segment>
+      )
+    })
+
+    return (
+      <div>
+        <Container textAlign="center">
+          <div style={mainContainer}>
+            {listingsArr}
+          </div>
         </Container>
       </div>
     )
